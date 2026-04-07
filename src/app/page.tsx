@@ -29,7 +29,7 @@ export default function Home() {
     ) / (result?.checks?.length || 1);
 
   return (
-    <main className="p-6 max-w-3xl mx-auto space-y-6">
+    <main className="p-6 max-w-3xl mx-auto space-y-6 bg-black-500">
 
       {/* HEADER */}
       <h1 className="text-2xl font-bold text-center">
