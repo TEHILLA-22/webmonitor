@@ -1,9 +1,38 @@
-import { checkWebsite } from "@/lib/checker";
+import {
+  runMultipleChecks,
+  calculateUptime,
+  getStatusBreakdown,
+  checkDNS,
+  checkSSL,
+} from "@/lib/checker";
 
 export async function POST(req: Request) {
-  const { url } = await req.json();
+  try {
+    const { url } = await req.json();
 
-  const result = await checkWebsite(url);
+    if (!url) {
+      return Response.json({ error: "URL is required" }, { status: 400 });
+    }
 
-  return Response.json(result);
+    const checks = await runMultipleChecks(url);
+    const uptime = calculateUptime(checks);
+    const breakdown = getStatusBreakdown(checks);
+    const dns = await checkDNS(url);
+    const ssl = checkSSL(url);
+
+    return Response.json({
+      checks,
+      uptimePercentage: uptime,
+      statusBreakdown: breakdown,
+      dns,
+      ssl,
+    });
+  } catch (error: any) {
+    console.error("API ERROR:", error);
+
+    return Response.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
