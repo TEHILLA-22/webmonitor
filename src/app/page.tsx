@@ -32,8 +32,8 @@ export default function Home() {
     <main className="p-6 max-w-3xl mx-auto space-y-6">
 
       {/* HEADER */}
-      <h1 className="text-2xl font-bold">
-        Website Monitoring Dashboard
+      <h1 className="text-2xl font-bold text-center">
+        Coxmos website spectacle
       </h1>
 
       {/* INPUT */}
@@ -80,6 +80,10 @@ export default function Home() {
 
         </div>
       )}
+      <div className="text-center text-gray-500 font-size-3xl">
+        <h3>Powered by Tehillz</h3>
+        <h3> &copy; 2026 || All rights reserved</h3>
+      </div>
 
       {/* HISTORY */}
       {result?.history && (
