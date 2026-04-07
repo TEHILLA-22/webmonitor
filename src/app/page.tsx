@@ -6,7 +6,6 @@ export default function Home() {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-const latest = result?.checks?.[0];
 
   const handleCheck = async () => {
     setLoading(true);
@@ -21,74 +20,99 @@ const latest = result?.checks?.[0];
     setLoading(false);
   };
 
+  const latest = result?.checks?.[0];
+
+  const avgTime =
+    result?.checks?.reduce(
+      (acc: number, c: any) => acc + (c.responseTime || 0),
+      0
+    ) / (result?.checks?.length || 1);
+
   return (
-    <main className="p-10 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Website Uptime Checker</h1>
+    <main className="p-6 max-w-3xl mx-auto space-y-6">
 
-      <input
-        className="border p-2 w-full mb-4"
-        placeholder="Enter domain (example.com)"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-      />
+      {/* HEADER */}
+      <h1 className="text-2xl font-bold">
+        Website Monitoring Dashboard
+      </h1>
 
-      <button onClick={handleCheck} className="bg-black text-white px-4 py-2">
-        {loading ? "Checking..." : "Check"}
-      </button>
+      {/* INPUT */}
+      <div className="border p-4 rounded-lg shadow">
+        <input
+          className="border p-2 w-full mb-3"
+          placeholder="Enter domain (e.g. google.com)"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
 
+        <button
+          onClick={handleCheck}
+          className="bg-black text-white px-4 py-2 rounded"
+        >
+          {loading ? "Checking..." : "Check Website"}
+        </button>
+      </div>
+
+      {/* STATUS OVERVIEW */}
       {result && (
-  <div className="mt-6 border p-4 rounded-lg shadow">
+        <div className="border p-4 rounded-lg shadow">
+          <div className="flex items-center gap-2 text-lg font-bold">
+            {latest?.status === "UP" ? "🟢" : "🔴"}
+            {latest?.status}
+          </div>
 
-    {/* STATUS */}
-    <div className="flex items-center gap-2 text-lg font-bold">
-      <span>
-        {latest?.status === "UP" ? "🟢" : "🔴"}
-      </span>
-      <span>{latest?.status}</span>
-    </div>
-
-    {/* MAIN INFO */}
-    <div className="mt-2 space-y-1">
-      <p><strong>HTTP Code:</strong> {latest?.statusCode ?? "N/A"}</p>
-      <p><strong>Response Time:</strong> {latest?.responseTime ?? "N/A"} ms</p>
-      <p><strong>Message:</strong> {latest?.issue}</p>
-    </div>
-
-    {/* UPTIME */}
-    <div className="mt-4">
-      <p><strong>Uptime:</strong> {result.uptimePercentage}%</p>
-    </div>
-
-    {/* INFRA DETAILS */}
-    <div className="mt-4 space-y-1">
-      <p><strong>DNS:</strong> {result.dns}</p>
-      <p><strong>SSL:</strong> {result.ssl}</p>
-      <p><strong>Server (detected):</strong> {latest?.headers?.server ?? "Unknown"}</p>
-      <p><strong>Content-Type:</strong> {latest?.headers?.contentType ?? "Unknown"}</p>
-    </div>
-
-    {/* STATUS BREAKDOWN */}
-    <div className="mt-4">
-      <p className="font-bold">Status Breakdown:</p>
-      {Object.entries(result.statusBreakdown).map(([code, count]) => (
-        <p key={code}>
-          {code}: {count}
-        </p>
-      ))}
-    </div>
-
-    {/* HISTORY */}
-    <div className="mt-4">
-      <p className="font-bold">Recent Checks:</p>
-      {result.checks.map((c: any, i: number) => (
-        <div key={i} className="text-sm border-b py-1">
-          {c.status === "UP" ? "🟢" : "🔴"} {c.statusCode} — {c.responseTime}ms
+          <p className="text-sm text-gray-500">
+            {latest?.issue}
+          </p>
         </div>
-      ))}
-    </div>
+      )}
 
-  </div>
-)}
+      {/* METRICS GRID */}
+      {result && (
+        <div className="grid grid-cols-2 gap-4">
+
+          <Card title="HTTP Code" value={latest?.statusCode ?? "N/A"} />
+          <Card title="Avg Response" value={`${Math.round(avgTime)} ms`} />
+          <Card title="Uptime" value={`${result.uptimePercentage}%`} />
+          <Card title="DNS" value={result.dns} />
+          <Card title="SSL" value={result.ssl} />
+          <Card title="Server" value={latest?.headers?.server || "Unknown"} />
+
+        </div>
+      )}
+
+      {/* HISTORY */}
+      {result?.history && (
+        <div className="border p-4 rounded-lg shadow">
+          <h3 className="font-bold mb-2">Recent Activity</h3>
+
+          {result.history.map((h: any) => (
+            <div
+              key={h.id}
+              className="flex justify-between text-sm border-b py-2"
+            >
+              <span>
+                {h.status === "UP" ? "🟢" : "🔴"} {h.statusCode}
+              </span>
+
+              <span>{h.responseTime ?? "N/A"} ms</span>
+
+              <span className="text-gray-400">
+                {new Date(h.createdAt).toLocaleTimeString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </main>
+  );
+}
+
+function Card({ title, value }: any) {
+  return (
+    <div className="border p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500">{title}</p>
+      <p className="font-bold">{value}</p>
+    </div>
   );
 }

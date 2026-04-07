@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Site {
+  id        String   @id @default(uuid())
+  url       String
+  createdAt DateTime @default(now())
+  checks    Check[]
+}
+
+model Check {
+  id           String   @id @default(uuid())
+  siteId       String
+  status       String
+  statusCode   Int?
+  responseTime Int?
+  issue        String?
+  createdAt    DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id])
+}

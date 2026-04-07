@@ -1,45 +1,23 @@
 import dns from "dns/promises";
 
-function normalizeUrl(url: string) {
-  if (!url.startsWith("http")) {
-    return `https://${url}`;
-  }
-  return url;
-}
-
 export async function checkWebsite(url: string) {
+  const finalUrl = url.startsWith("http") ? url : `https://${url}`;
   const start = Date.now();
-  const finalUrl = normalizeUrl(url);
-  const isHTTPS = finalUrl.startsWith("https://");
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const res = await fetch(finalUrl, {
-      method: "GET",
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
+    const res = await fetch(finalUrl);
     const time = Date.now() - start;
 
-    // ✅ NOW res exists
-    const server = res.headers.get("server");
-    const contentType = res.headers.get("content-type");
-
     return {
-  status: res.ok ? "UP" : "DOWN",
-  statusCode: res.status,
-  responseTime: time,
-  issue: classifyStatus(res.status),
-  headers: {
-    server,
-    contentType,
-  },
-  ssl: isHTTPS ? "Valid HTTPS" : "No HTTPS",
-};
+      status: res.ok ? "UP" : "DOWN",
+      statusCode: res.status,
+      responseTime: time,
+      issue: classifyStatus(res.status),
+      headers: {
+        server: res.headers.get("server"),
+        contentType: res.headers.get("content-type"),
+      },
+    };
   } catch (error: any) {
     return {
       status: "DOWN",
@@ -52,77 +30,71 @@ export async function checkWebsite(url: string) {
 }
 
 function classifyStatus(code: number) {
-  if (code >= 200 && code < 300) return "Website is working correctly.";
-  if (code >= 300 && code < 400) return "Website is redirecting requests.";
-  if (code >= 400 && code < 500) return "Client error — request may be blocked.";
-  if (code >= 500) return "Server error — the server is failing.";
-
-  return "Unknown status.";
+  if (code >= 200 && code < 300) return "Working correctly";
+  if (code >= 300 && code < 400) return "Redirecting";
+  if (code >= 400 && code < 500) return "Client error";
+  if (code >= 500) return "Server error";
+  return "Unknown";
 }
 
 function classifyError(error: any) {
-  if (error.name === "AbortError") {
-    return "Request timed out — server may be overloaded.";
-  }
+  const msg = error.message?.toLowerCase() || "";
 
-  if (error.message?.includes("ENOTFOUND")) {
-    return "Domain not found — DNS issue.";
-  }
+  if (msg.includes("enotfound")) return "DNS not found";
+  if (msg.includes("econnrefused")) return "Connection refused";
+  if (msg.includes("timeout")) return "Request timeout";
 
-  if (error.message?.includes("ECONNREFUSED")) {
-    return "Connection refused — server may be down.";
-  }
-
-  return "Network error — cannot reach server.";
+  return "Network error";
 }
 
 export async function runMultipleChecks(url: string) {
   const checks = [];
 
   for (let i = 0; i < 3; i++) {
-    const result = await checkWebsite(url);
-    checks.push(result);
+    checks.push(await checkWebsite(url));
   }
 
   return checks;
 }
 
-// ✅ EXPORT these
 export function calculateUptime(checks: any[]) {
-  const upCount = checks.filter(c => c.status === "UP").length;
-  return Number(((upCount / checks.length) * 100).toFixed(2));
+  const up = checks.filter(c => c.status === "UP").length;
+  return (up / checks.length) * 100;
 }
 
 export function getStatusBreakdown(checks: any[]) {
   const map: Record<string, number> = {};
 
   checks.forEach(c => {
-    const code = c.statusCode || "ERROR";
+    const code = c.statusCode || "ERR";
     map[code] = (map[code] || 0) + 1;
   });
 
   return map;
 }
 
-export function checkSSL(finalUrl: string) {
+export async function checkDNS(url: string) {
   try {
-    const parsed = new URL(finalUrl);
-
-    if (parsed.protocol === "https:") {
-      return "Secure (HTTPS)";
-    }
-
-    return "Not Secure (HTTP)";
+    const clean = url.replace(/^https?:\/\//, "").split("/")[0];
+    await dns.lookup(clean);
+    return "Resolved";
   } catch {
-    return "Invalid URL";
+    return "Failed";
   }
 }
 
-export async function checkDNS(url: string) {
+export function checkSSL(url: string) {
+  return url.startsWith("https") ? "HTTPS Enabled" : "No HTTPS";
+}
+
+export async function pingDomain(url: string) {
+  const finalUrl = url.startsWith("http") ? url : `https://${url}`;
+  const start = Date.now();
+
   try {
-    await dns.lookup(url.replace(/^https?:\/\//, ""));
-    return "DNS resolved";
+    await fetch(finalUrl, { method: "HEAD" });
+    return { latency: Date.now() - start };
   } catch {
-    return "DNS failed";
+    return { latency: null };
   }
 }

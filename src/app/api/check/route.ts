@@ -6,6 +6,8 @@ import {
   checkSSL,
 } from "@/lib/checker";
 
+import { prisma } from "@/lib/prisma";
+
 export async function POST(req: Request) {
   try {
     const { url } = await req.json();
