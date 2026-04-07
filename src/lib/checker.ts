@@ -10,6 +10,7 @@ function normalizeUrl(url: string) {
 export async function checkWebsite(url: string) {
   const start = Date.now();
   const finalUrl = normalizeUrl(url);
+  const isHTTPS = finalUrl.startsWith("https://");
 
   try {
     const controller = new AbortController();
@@ -29,15 +30,16 @@ export async function checkWebsite(url: string) {
     const contentType = res.headers.get("content-type");
 
     return {
-      status: res.ok ? "UP" : "DOWN",
-      statusCode: res.status,
-      responseTime: time,
-      issue: classifyStatus(res.status),
-      headers: {
-        server,
-        contentType,
-      },
-    };
+  status: res.ok ? "UP" : "DOWN",
+  statusCode: res.status,
+  responseTime: time,
+  issue: classifyStatus(res.status),
+  headers: {
+    server,
+    contentType,
+  },
+  ssl: isHTTPS ? "Valid HTTPS" : "No HTTPS",
+};
   } catch (error: any) {
     return {
       status: "DOWN",
@@ -102,10 +104,18 @@ export function getStatusBreakdown(checks: any[]) {
   return map;
 }
 
-export function checkSSL(url: string) {
-  return url.startsWith("https")
-    ? "Secure (HTTPS)"
-    : "Not Secure (HTTP)";
+export function checkSSL(finalUrl: string) {
+  try {
+    const parsed = new URL(finalUrl);
+
+    if (parsed.protocol === "https:") {
+      return "Secure (HTTPS)";
+    }
+
+    return "Not Secure (HTTP)";
+  } catch {
+    return "Invalid URL";
+  }
 }
 
 export async function checkDNS(url: string) {

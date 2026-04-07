@@ -14,11 +14,16 @@ export async function POST(req: Request) {
       return Response.json({ error: "URL is required" }, { status: 400 });
     }
 
+
     const checks = await runMultipleChecks(url);
     const uptime = calculateUptime(checks);
     const breakdown = getStatusBreakdown(checks);
     const dns = await checkDNS(url);
-    const ssl = checkSSL(url);
+
+    const normalizedUrl = url.startsWith("http")
+  ? url
+  : `https://${url}`;
+    const ssl = checkSSL(normalizedUrl);
 
     return Response.json({
       checks,

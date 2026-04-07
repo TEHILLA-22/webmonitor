@@ -63,7 +63,7 @@ const latest = result?.checks?.[0];
     <div className="mt-4 space-y-1">
       <p><strong>DNS:</strong> {result.dns}</p>
       <p><strong>SSL:</strong> {result.ssl}</p>
-      <p><strong>Server:</strong> {latest?.headers?.server ?? "Unknown"}</p>
+      <p><strong>Server (detected):</strong> {latest?.headers?.server ?? "Unknown"}</p>
       <p><strong>Content-Type:</strong> {latest?.headers?.contentType ?? "Unknown"}</p>
     </div>
 
